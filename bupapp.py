@@ -9,19 +9,18 @@ import pandas as pd
 import numpy as np
 import io
 import threading
-import queue
 
-path = 'C:/Users/tarab/Desktop/^/gestapo/FTP_IP.csv'
+path = 'C:/Users/tarab/Desktop/^/gestapo/windows bupapp/FTP_IP2.csv'
 Data = pd.read_csv(path, sep=';')
 Data = pd.DataFrame(Data)
 
-ASS_List1 = [['Lin1', 'Rob1', 'IP1'], ['Lin2', 'Rob2', 'IP2'],
-            ['Lin3', 'Rob3', 'IP3'], ['Lin4', 'Rob4', 'IP4'],
-            ['Lin5', 'Rob5', 'IP5'], ['Lin8', 'Rob8', 'IP8'],
-            ['Lin9', 'Rob9', 'IP9'], ['Lin10', 'Rob10', 'IP10']]
 
-ASS_List2 = [['Lin6-1', 'Rob6-1', 'IP6-1'], ['Lin6-2', 'Rob6-2', 'IP6-2'], 
-            ['Lin7', 'Rob7', 'IP7']]
+ASS_List1 = [['ASS1', 'Rob1', 'IP1'], ['ASS2', 'Rob2', 'IP2'],
+            ['ASS3', 'Rob3', 'IP3'], ['ASS4', 'Rob4', 'IP4'],
+            ['ASS5', 'Rob5', 'IP5'], ['ASS8', 'Rob8', 'IP8'],
+            ['ASS9', 'Rob9', 'IP9'], ['ASS10', 'Rob10', 'IP10']]
+
+ASS_List2 = [['ASS6', 'Rob6', 'IP6'], ['ASS7', 'Rob7', 'IP7']]
 
 AL = pd.DataFrame(ASS_List1 + ASS_List2)
 
@@ -66,7 +65,6 @@ def get_robot_info(location):
     print('Laczenie z ', LINE, ROBOT, IP)
     return LINE, ROBOT, IP
 
-
 ######################################################################################################
 class Application(tk.Frame):
     def __init__(self, master=None):
@@ -78,6 +76,10 @@ class Application(tk.Frame):
         self.makeCheckList2(ASS_List=ASS_List2)
         self.cl.pack()
         self.location = ''
+        self.LT = tk.Label(leftFrame, text=0)
+        self.LT.pack(side='bottom')
+        self.initial_threads = threading.active_count()
+        self.LT.after(1000, self.refresh_LT)
     def create_widgets(self):
 
         #RADIOBUTTONS
@@ -92,11 +94,11 @@ class Application(tk.Frame):
         self.A2 = tk.Radiobutton(leftFrame, text='NETWORK 2', variable=self.var1, value=1, command=self.choose_n2)
         self.A2.pack(side = 'top')
         
-        self.B4 = tk.Radiobutton(rightFrame, text='CMOS & FILES', variable=self.var2, value=3)
+        self.B4 = tk.Radiobutton(rightFrame, text='CMOS & pliki', variable=self.var2, value=3)
         self.B4.pack()
         self.B3 = tk.Radiobutton(rightFrame, text='Pobierz cmos', variable=self.var2, value=1)
         self.B3.pack()
-        self.B2 = tk.Radiobutton(rightFrame, text='pobierz pliki  ', variable=self.var2, value=2)
+        self.B2 = tk.Radiobutton(rightFrame, text='Pobierz pliki  ', variable=self.var2, value=2)
         self.B2.pack()
         self.B1 = tk.Radiobutton(rightFrame, text='Check connec', variable=self.var2, value=0)
         self.B1.pack()
@@ -110,14 +112,14 @@ class Application(tk.Frame):
 
         #text
         # Create text widget and specify size. 
-        self.T = tk.Text(rightBotFrame, height = 20, width = 60, highlightcolor='blue')
+        self.T = tk.Text(rightBotFrame, height = 20, width = 50, highlightcolor='blue')
         #output = buffer.getvalue()
-        self.T.pack(side='bottom', pady=10)
+        self.T.pack(side='bottom', pady=5)
         #self.T.insert(tk.END, robot_list) 
 
         # error text
-        self.TE = tk.Text(leftBotFrame, height = 20, width =60, fg='red', highlightcolor='red')
-        self.TE.pack(side='bottom', pady=10)
+        self.TE = tk.Text(leftBotFrame, height = 20, width =50, fg='red', highlightcolor='red')
+        self.TE.pack(side='bottom', pady=5)
 
         #label & button
         self.L1 = tk.Label(leftBotFrame, text='          NOT OK', font='Helvetica 18 bold')
@@ -130,13 +132,24 @@ class Application(tk.Frame):
         self.B2 = tk.Button(rightBotFrame, text='save log', command=self.press_log)
         self.B2.pack(side='right')
 
+        #self.threads_running = tk.IntVar()
+        #self.LT = tk.Label(leftFrame, textvariable=self.threads_running)
+        #self.threads_running.set(threading.active_count())
+        #self.LT.pack(side='bottom')
+
+
+    def refresh_LT(self):
+        self.LT.configure(text='Aktywne połączenia: %i' %(threading.active_count() - self.initial_threads))
+        self.LT.after(1000, self.refresh_LT)
+
+
     def press_log_errors(self):
-        with open(save_dir + '//' + 'error_log.txt', 'a') as f:
+        with open(save_dir + '//' + str(datetime.date.today()) +'_error_log.txt', 'a') as f:
             f.write(self.TE.get('1.0', 'end'))
         self.TE.delete('1.0', 'end')
 
     def press_log(self):
-        with open(save_dir + '//' + 'log.txt', 'a') as f:
+        with open(save_dir + '//' + str(datetime.date.today()) +'_log.txt', 'a') as f:
             f.write(self.T.get('1.0', 'end'))
         self.T.delete('1.0', 'end')
 
@@ -232,7 +245,7 @@ class Application(tk.Frame):
                     print(f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})')
             else:
                 self.T.insert(tk.END, f'BACKUP EXISTS: {LINE}/{ROBOT} ({IP})\n')
-                print(f'BACKUP EXISTS: {LINE}/{ROBOT} ({IP})')          
+                print(f'BACKUP EXISTS: {LINE}/{ROBOT} ({IP})')
 
     def get_files(self):
         loc = self.location
@@ -266,11 +279,14 @@ class Application(tk.Frame):
                             try:
                                 ftp.retrbinary('RETR '+ filename, file.write)
                             except Exception as e:
-                                self.TE.insert(tk.END, f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
-                                print(f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP})')
-                                return -1
+                                #self.TE.insert(tk.END, f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
+                                print(f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP}) : {filename}')
+                                
                             file.close()
                         ftp.cwd('..')
+                    #handle cases when downloading files is blocked:
+
+                    #good route:
                     self.T.insert(tk.END, f'SAVED  ON: {save_dir_full}\n')
                     print(f'SAVED ON: {save_dir_full}')
                     ftp.quit()
@@ -337,16 +353,13 @@ class Application(tk.Frame):
                 thread = threading.Thread(target=self.check_connection)
                 thread.start()
 
-            # self.T.insert(tk.END, '---- ZAKONCZONO TEST POLACZENIA ----')
         # GET CMOS     
         if self.var2.get() == 1:
             for location in robot_list:
                 self.location = location
                 thread = threading.Thread(target=self.get_cmos)
                 thread.start()
-                time.sleep(0.01) # prevenst possible change of location before it's processed by the function
-            print('------ ZAKONCZONO PETLE CMOS --------')
-            #self.T.insert(tk.END, '---- ZAKONCZONO PETLE CMOS ----')
+
         # GET FILES   
         if self.var2.get() == 2:
             for location in robot_list:
@@ -354,8 +367,7 @@ class Application(tk.Frame):
                 thread = threading.Thread(target=self.get_files)
                 thread.start()
                 time.sleep(0.01)
-            print('------ ZAKONCZONO PETLE FILES --------')
-            #self.T.insert(tk.END, '---- ZAKONCZONO PETLE FILES ----')
+                
         # FILES & CMOS
         if self.var2.get() == 3:
             for location in robot_list:
@@ -364,11 +376,7 @@ class Application(tk.Frame):
                 thread2 = threading.Thread(target=self.get_files)
                 thread1.start()
                 thread2.start()
-                print('------ ZAKONCZONO PETLE  --------')
-                #self.T.insert(tk.END, '---- ZAKONCZONO PETLE ----')
-                
-            
-
+                #self.get_cmos()
 save_dir = init_date()
 container = set()
 
@@ -396,7 +404,9 @@ leftFrame.pack(side='left')
 rightFrame = tk.Frame(topFrame)
 rightFrame.pack(side='right')
 
-root.geometry('1000x700')
+root.geometry('1000x800')
+
 app = Application(master=root)
-       
+
+
 app.mainloop()
