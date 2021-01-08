@@ -10,26 +10,19 @@ import numpy as np
 import io
 import threading
 
-path = 'C:/Users/tarab/Desktop/^/gestapo/windows bupapp/FTP_IP2.csv'
-Data = pd.read_csv(path, sep=';')
-Data = pd.DataFrame(Data)
 
+df = pd.read_csv('FTP_IP2.csv', sep=';')
+AL1 = pd.read_csv('ASStable441.csv', header=None)
+AL2 = pd.read_csv('ASStable442.csv', header=None)
+AL = pd.concat([AL1, AL2])
 
-ASS_List1 = [['ASS1', 'Rob1', 'IP1'], ['ASS2', 'Rob2', 'IP2'],
-            ['ASS3', 'Rob3', 'IP3'], ['ASS4', 'Rob4', 'IP4'],
-            ['ASS5', 'Rob5', 'IP5'], ['ASS8', 'Rob8', 'IP8'],
-            ['ASS9', 'Rob9', 'IP9'], ['ASS10', 'Rob10', 'IP10']]
+ASS_List1 = []
+ASS_List2 = []
+for i in range(len(AL1)):
+    ASS_List1.append(list(AL1.iloc[i,:]))
+for i in range(len(AL2)):
+    ASS_List2.append(list(AL2.iloc[i,:]))
 
-ASS_List2 = [['ASS6', 'Rob6', 'IP6'], ['ASS7', 'Rob7', 'IP7']]
-
-AL = pd.DataFrame(ASS_List1 + ASS_List2)
-
-Rob_Mat=[]
-for index in (ASS_List1 + ASS_List2):
-    ass = Data.loc[:, index]
-    for i in range(0, ass.count()[0]):
-        Rob_Mat.append(ass.iloc[i, :])
-df = pd.DataFrame(Rob_Mat)
         
 def init_date():
     my_date = datetime.date.today()
@@ -94,8 +87,6 @@ class Application(tk.Frame):
         self.A2 = tk.Radiobutton(leftFrame, text='NETWORK 2', variable=self.var1, value=1, command=self.choose_n2)
         self.A2.pack(side = 'top')
         
-        self.B4 = tk.Radiobutton(rightFrame, text='CMOS & pliki', variable=self.var2, value=3)
-        self.B4.pack()
         self.B3 = tk.Radiobutton(rightFrame, text='Pobierz cmos', variable=self.var2, value=1)
         self.B3.pack()
         self.B2 = tk.Radiobutton(rightFrame, text='Pobierz pliki  ', variable=self.var2, value=2)
@@ -368,15 +359,6 @@ class Application(tk.Frame):
                 thread.start()
                 time.sleep(0.01)
                 
-        # FILES & CMOS
-        if self.var2.get() == 3:
-            for location in robot_list:
-                self.location = location
-                thread1 = threading.Thread(target=self.get_cmos)
-                thread2 = threading.Thread(target=self.get_files)
-                thread1.start()
-                thread2.start()
-                #self.get_cmos()
 save_dir = init_date()
 container = set()
 
