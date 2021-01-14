@@ -41,10 +41,7 @@ def connect_ftp(ip):
         return False, e
     return True, ftp
 
-def get_robot_info(location):
-    robot = location.split('.')
-    # eg. robot[0] == Lin1 ; robot[1] == R1
-    #print(robot)
+def get_robot_ip(robot):
     LINE = robot[0]
     ROBOT = robot[1]
     Line_num = df.columns.get_loc(robot[0])
@@ -56,8 +53,9 @@ def get_robot_info(location):
     # remove index and spacebars
     IP = IP.to_string(index=False).replace(' ', '')
     print('Laczenie z ', LINE, ROBOT, IP)
-    return LINE, ROBOT, IP
-
+    return IP
+    
+    
 ######################################################################################################
 class Application(tk.Frame):
     def __init__(self, master=None):
@@ -69,6 +67,7 @@ class Application(tk.Frame):
         self.makeCheckList2(ASS_List=ASS_List2)
         self.cl.pack()
         self.location = ''
+        self.location_ass = ''
         self.LT = tk.Label(leftFrame, text=0)
         self.LT.pack(side='bottom')
         self.initial_threads = threading.active_count()
@@ -190,8 +189,10 @@ class Application(tk.Frame):
 
     ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
     def check_connection(self):
-        if self.location not in (list(AL.iloc[:, 0])):
-            LINE, ROBOT, IP = get_robot_info(self.location)
+        LINE = self.location_ass
+        location = self.location
+        for ROBOT in location:
+            IP = get_robot_ip([LINE, ROBOT])
             ftp_status, ftp = connect_ftp(IP)
             if ftp_status == True:
                 print(f'CONNECTED: {LINE}/{ROBOT} ({IP})')
@@ -202,10 +203,10 @@ class Application(tk.Frame):
                 self.TE.insert(tk.END, f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})\n')
 
     def get_cmos(self):
-        loc = self.location
-        if loc not in (list(AL.iloc[:, 0])):
-            LINE, ROBOT, IP = get_robot_info(loc)
-
+        LINE = self.location_ass
+        location = self.location
+        for ROBOT in location:
+            IP = get_robot_ip([LINE, ROBOT])
             save_dir_full = os.path.join(save_dir, LINE, ROBOT)
             if not(os.path.exists(save_dir_full +'/'+'cmosbk.bin')):
                 try:
@@ -239,10 +240,10 @@ class Application(tk.Frame):
                 print(f'BACKUP EXISTS: {LINE}/{ROBOT} ({IP})')
 
     def get_files(self):
-        loc = self.location
-        if loc not in (list(AL.iloc[:, 0])):
-            LINE, ROBOT, IP = get_robot_info(loc)
-
+        LINE = self.location_ass
+        location = self.location
+        for ROBOT in location:
+            IP = get_robot_ip([LINE, ROBOT])
             save_dir_full = os.path.join(save_dir, LINE, ROBOT)
             if not(os.path.exists(save_dir_full +'/'+'LOG')):
                 ftp_status, ftp = connect_ftp(IP)
@@ -337,27 +338,48 @@ class Application(tk.Frame):
 
     def press_test(self):
         robot_list = list(container)
+        d = {}
+        for location in robot_list:
+            try:
+                robot = location.split('.')
+                LINE = robot[0]
+                ROBOT = robot[1]
+                if LINE in d:
+                    d[LINE].append(ROBOT)
+                else:
+                    d[LINE] = [ROBOT]
+            except:
+                pass
+            #try block discards checked line names (ex. 'ASS1', 'ASS2')
+        
+        # create a dataframe from the dictionary d
+        designated = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in d.items() ]))
+        
         # CHECK CONNECTION
         if self.var2.get() == 0:
-            for location in robot_list:
-                self.location = location
+            for col in designated:
+                self.location_ass = col
+                self.location = designated[col].dropna()
                 thread = threading.Thread(target=self.check_connection)
                 thread.start()
 
         # GET CMOS     
         if self.var2.get() == 1:
-            for location in robot_list:
-                self.location = location
+
+            for col in designated:
+                self.location_ass = col
+                self.location = designated[col].dropna()
                 thread = threading.Thread(target=self.get_cmos)
                 thread.start()
 
         # GET FILES   
         if self.var2.get() == 2:
-            for location in robot_list:
-                self.location = location
+            for col in designated:
+                self.location_ass = col
+                self.location = designated[col].dropna()
                 thread = threading.Thread(target=self.get_files)
                 thread.start()
-                time.sleep(0.01)
+            
                 
 save_dir = init_date()
 container = set()
