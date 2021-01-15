@@ -1,4 +1,4 @@
-import tkinter as tk
+﻿import tkinter as tk
 from tkinter import tix
 from ftplib import FTP
 import os
@@ -86,6 +86,8 @@ class Application(tk.Frame):
         self.A2 = tk.Radiobutton(leftFrame, text='NETWORK 2', variable=self.var1, value=1, command=self.choose_n2)
         self.A2.pack(side = 'top')
         
+        self.B4 = tk.Radiobutton(rightFrame, text='CMOS & pliki', variable=self.var2, value=3)
+        self.B4.pack()
         self.B3 = tk.Radiobutton(rightFrame, text='Pobierz cmos', variable=self.var2, value=1)
         self.B3.pack()
         self.B2 = tk.Radiobutton(rightFrame, text='Pobierz pliki  ', variable=self.var2, value=2)
@@ -222,16 +224,17 @@ class Application(tk.Frame):
                     except Exception as e:
                         self.TE.insert(tk.END, f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
                         print(f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})')
-                        return -1
-                    with open(save_dir_full + '//' + 'cmosbk.bin', 'wb') as lf:
-                        try:
-                            ftp.retrbinary('RETR ' + 'cmosbk.bin', lf.write)
-                            self.T.insert(tk.END, (f'SAVED  ON: {save_dir_full}\n'))
-                            print(f'SAVED  ON: {save_dir_full}')
-                        except Exception as e:
-                            self.TE.insert(tk.END, f'CMOSBK.BIN ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
-                            print(f'CMOSBK.BIN ERROR: {e} {LINE}/{ROBOT} ({IP})')
-                    ftp.quit()
+                        ftp_status = False
+                    if ftp_status == True:
+                        with open(save_dir_full + '//' + 'cmosbk.bin', 'wb') as lf:
+                            try:
+                                ftp.retrbinary('RETR ' + 'cmosbk.bin', lf.write)
+                                self.T.insert(tk.END, (f'SAVED  ON: {save_dir_full}\n'))
+                                print(f'SAVED  ON: {save_dir_full}')
+                            except Exception as e:
+                                self.TE.insert(tk.END, f'CMOSBK.BIN ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
+                                print(f'CMOSBK.BIN ERROR: {e} {LINE}/{ROBOT} ({IP})')
+                        ftp.quit()
                 else:
                     self.TE.insert(tk.END, f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})\n')
                     print(f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})')
@@ -253,42 +256,128 @@ class Application(tk.Frame):
                     except Exception as e:
                         self.TE.insert(tk.END, f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
                         print(f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})')
-                        return -1                        
-                    Folder_List = ftp.nlst()
-                    for folder in Folder_List:
-                        if not(os.path.exists(save_dir_full +'/'+folder)):
-                            try:
-                                os.makedirs(save_dir_full +'/'+folder)
-                            except:
-                                #print('katalog juz istnieje')
-                                pass
-                        ftp.cwd(folder)
-                        filenames = ftp.nlst() # get filenames within the directory
-                        #print('...pobieranie folderu ', folder)
-                        for filename in filenames:
-                            local_filename = os.path.join(save_dir_full +'/'+folder+'/'+ filename)
-                            file = open(local_filename, 'wb')
-                            try:
-                                ftp.retrbinary('RETR '+ filename, file.write)
-                            except Exception as e:
-                                #self.TE.insert(tk.END, f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
-                                print(f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP}) : {filename}')
+                        ftp_status = False
+                    if ftp_status == True:    
+                        Folder_List = ftp.nlst()
+                        for folder in Folder_List:
+                            if not(os.path.exists(save_dir_full +'/'+folder)):
+                                try:
+                                    os.makedirs(save_dir_full +'/'+folder)
+                                except:
+                                    #print('katalog juz istnieje')
+                                    pass
+                            ftp.cwd(folder)
+                            filenames = ftp.nlst() # get filenames within the directory
+                            #print('...pobieranie folderu ', folder)
+                            for filename in filenames:
+                                local_filename = os.path.join(save_dir_full +'/'+folder+'/'+ filename)
+                                file = open(local_filename, 'wb')
+                                try:
+                                    ftp.retrbinary('RETR '+ filename, file.write)
+                                except Exception as e:
+                                    #self.TE.insert(tk.END, f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
+                                    print(f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP}) : {filename}')
                                 
-                            file.close()
-                        ftp.cwd('..')
-                    #handle cases when downloading files is blocked:
+                                file.close()
+                            ftp.cwd('..')
+                        #handle cases when downloading files is blocked:
 
-                    #good route:
-                    self.T.insert(tk.END, f'SAVED  ON: {save_dir_full}\n')
-                    print(f'SAVED ON: {save_dir_full}')
-                    ftp.quit()
+                        #good route:
+                        self.T.insert(tk.END, f'SAVED ON: {save_dir_full}\n')
+                        print(f'SAVED ON: {save_dir_full}')
+                        ftp.quit()
                 else:
                     self.TE.insert(tk.END, f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})\n')
                     print(f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})')
             else:
-                self.T.insert(tk.END, f'FILES EXISTS: {LINE}/{ROBOT} ({IP})\n')
-                print(f'FILES EXISTS: {LINE}/{ROBOT} ({IP})')
+                self.T.insert(tk.END, f'FILES EXIST: {LINE}/{ROBOT} ({IP})\n')
+                print(f'FILES EXIST: {LINE}/{ROBOT} ({IP})')
 
+
+    def get_cmos_files(self):
+        LINE = self.location_ass
+        location = self.location
+        for ROBOT in location:
+            IP = get_robot_ip([LINE, ROBOT])
+            save_dir_full = os.path.join(save_dir, LINE, ROBOT)
+            if not(os.path.exists(save_dir_full +'/'+'cmosbk.bin')):
+                try:
+                    os.makedirs(save_dir_full)
+                except:
+                    #print('katalog juz istnieje')
+                    pass
+                ftp_status, ftp = connect_ftp(IP)
+                if ftp_status == True:
+                    try:
+                        ftp.cwd('ROBOT/')
+                        ftp.cwd('/spdrv')
+                    except Exception as e:
+                        self.TE.insert(tk.END, f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
+                        print(f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})')
+                        ftp_status = False
+                    if ftp_status == True:
+                        with open(save_dir_full + '//' + 'cmosbk.bin', 'wb') as lf:
+                            try:
+                                ftp.retrbinary('RETR ' + 'cmosbk.bin', lf.write)
+                                self.T.insert(tk.END, (f'CMOS.BIN SAVED ON: {save_dir_full}\n'))
+                                print(f'CMOS.BIN SAVED  ON: {save_dir_full}')
+                            except Exception as e:
+                                self.TE.insert(tk.END, f'CMOSBK.BIN ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
+                                print(f'CMOSBK.BIN ERROR: {e} {LINE}/{ROBOT} ({IP})')
+                        ftp.quit()
+                else:
+                    self.TE.insert(tk.END, f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})\n')
+                    print(f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})')
+            else:
+                self.T.insert(tk.END, f'BACKUP EXISTS: {LINE}/{ROBOT} ({IP})\n')
+                print(f'BACKUP EXISTS: {LINE}/{ROBOT} ({IP})')
+            # FILES \/
+            if not(os.path.exists(save_dir_full +'/'+'LOG')):
+                ftp_status, ftp = connect_ftp(IP)
+                if ftp_status == True:
+                    try:
+                        ftp.cwd('ROBOT/')
+                    except Exception as e:
+                        self.TE.insert(tk.END, f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
+                        print(f'CWD ERROR: {e} {LINE}/{ROBOT} ({IP})')
+                        ftp_status = False
+                    if ftp_status == True:    
+                        Folder_List = ftp.nlst()
+                        for folder in Folder_List:
+                            if not(os.path.exists(save_dir_full +'/'+folder)):
+                                try:
+                                    os.makedirs(save_dir_full +'/'+folder)
+                                except:
+                                    #print('katalog juz istnieje')
+                                    pass
+                            ftp.cwd(folder)
+                            filenames = ftp.nlst() # get filenames within the directory
+                            #print('...pobieranie folderu ', folder)
+                            for filename in filenames:
+                                local_filename = os.path.join(save_dir_full +'/'+folder+'/'+ filename)
+                                file = open(local_filename, 'wb')
+                                try:
+                                    ftp.retrbinary('RETR '+ filename, file.write)
+                                except Exception as e:
+                                    #self.TE.insert(tk.END, f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP})\n')
+                                    print(f'DIR ERROR: {e} {LINE}/{ROBOT} ({IP}) : {filename}')
+                                
+                                file.close()
+                            ftp.cwd('..')
+                        #handle cases when downloading files is blocked:
+
+                        #good route:
+                        self.T.insert(tk.END, f'FILES SAVED ON: {save_dir_full}\n')
+                        print(f'FILES SAVED ON: {save_dir_full}')
+                        ftp.quit()
+                else:
+                    self.TE.insert(tk.END, f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})\n')
+                    print(f'FTP ERROR: {ftp} {LINE}/{ROBOT} ({IP})')
+            else:
+                self.T.insert(tk.END, f'FILES EXIST: {LINE}/{ROBOT} ({IP})\n')
+                print(f'FILES EXIST: {LINE}/{ROBOT} ({IP})')
+                
+                
     def selectItem(self, item):
         if self.cl.winfo_ismapped():
             for line in (ASS_List1):
@@ -379,7 +468,14 @@ class Application(tk.Frame):
                 self.location = designated[col].dropna()
                 thread = threading.Thread(target=self.get_files)
                 thread.start()
-            
+
+        # FILES & CMOS
+        if self.var2.get() == 3:
+            for col in designated:
+                self.location_ass = col
+                self.location = designated[col].dropna()
+                thread = threading.Thread(target=self.get_cmos_files)
+                thread.start()
                 
 save_dir = init_date()
 container = set()
